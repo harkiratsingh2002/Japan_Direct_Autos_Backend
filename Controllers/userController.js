@@ -3,6 +3,8 @@ const bcryptjs = require("bcryptjs");
 var salt = bcryptjs.genSaltSync(10);
 const jwt = require("jsonwebtoken");
 const secret = process.env.JWT_SECRET;
+const nodemailer = require("nodemailer");
+
 
 const userController = {
   addAdmin: async (req, res, next) => {
@@ -344,6 +346,121 @@ const userController = {
     return res.status(200).json({
       message: 'Deleted Successfully.'
     })
+  },
+  forgotPassword: async (req,res,next)=>{
+    try{
+
+      const transport = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          type: "OAuth2",
+          user: "milansinghdav@gmail.com",
+          password: process.env.EMAIL_PASS,
+          clientId: process.env.CLIENT_ID,
+          clientSecret: process.env.CLIENT_SECRET,
+          refreshToken: process.env.REFRESH_TOKEN,
+          //   accessToken: accessToken,
+        },
+      })
+  
+      const htmlContent = ` 
+                      <h1>Otp for changing password.</h1>
+                      <h3>Otp:- ${req.body.otp}</h3>
+                      `
+                      const mailOptions = {
+                        from: "milansinghdav@gmail.com",
+                        to: req.body.email,
+                        subject:
+                          "Important: otp for changing password.",
+                        html: htmlContent,
+                      };
+                    await transport.sendMail(mailOptions);
+                    return res.status(201).json({
+                       message: 'otp sent.' 
+                    })
+    }
+    catch(error){
+      console.log('error while sending Otp:-',error)
+      return res.status(500).json({
+          message: 'Some server error occured.'
+      })
+    }
+  },
+  changePassword: async (req,res,next)=>{
+    try {
+      
+      let user = await User.findOne({
+        email: req.body.email
+      })
+
+      if(!user){
+        let newError = {
+          message: 'user not found'
+        }
+        throw newError;
+      }
+      else{
+        let hash = bcryptjs.hashSync(req.body.newPassword, salt);
+      
+        user.password = hash;
+
+        await user.save();
+        return res.status(201).json({
+          message: 'Password changed.'
+        })
+      }
+
+    } catch (error) {
+      console.log('error while changing password:- ',error);
+      return res.status(500).json({
+        message: error.message
+      })
+    }
+  },
+  getUser: async (req,res,next)=> {
+
+    return res.status(200).json({
+      user: req.user
+    })
+  },
+  updateUser: async (req,res,next)=>{
+    try {
+      let user =  await User.findOne({email: req.body.oldEmail})
+      if(!user){
+        let newError = {
+          message: 'user not found.'
+        }
+        throw newError
+      }
+      else{
+        if(req.body.oldEmail != req.body.newUserData.email){
+
+          let chkUser = await User.findOne({
+            email: req.body.newUserData.email
+          })
+          if(chkUser){
+            let newError = {
+              message: 'User with that email already exist'
+            }
+            throw newError;
+          }
+        }
+        user.firstName = req.body.newUserData.firstName
+        user.lastName = req.body.newUserData.lastName
+        user.email = req.body.newUserData.email
+        await user.save();
+
+        return res.status(200).json({
+          message: 'user updated successfully.'
+        })
+
+      }
+    } catch (error) {
+      console.log('err while updating user',error);
+      return res.status(500).json({
+        message: error.message
+      })
+    }
   }
 };
 

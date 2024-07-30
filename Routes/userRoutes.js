@@ -16,6 +16,14 @@ userRouter.post("/edit-user-admin",authentication,userController.editUserAdmin);
 userRouter.post("/search-user",userController.searchUser);
 userRouter.post("/search-user-by-email",userController.searchUserByEmail);
 userRouter.post('/delete-user',userController.deleteUser)
+userRouter.post('/forgot-password',userController.forgotPassword)
+userRouter.post('/change-password',userController.changePassword)
+userRouter.post('/get-user',authentication,userController.getUser)
+userRouter.post('/update-user',userController.updateUser)
+
+
+
+
 
 
 

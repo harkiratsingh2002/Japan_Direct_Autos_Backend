@@ -148,6 +148,7 @@ const carController = {
         year,
         price,
         brand,
+        description,
         engine,
         suspension,
         transmission,
@@ -163,6 +164,7 @@ const carController = {
       newCar.year = year;
       newCar.price = price;
       newCar.brand = brand;
+      newCar.description = description;
       newCar.engine = engine;
       newCar.mileage = mileage;
       newCar.suspension = suspension;
