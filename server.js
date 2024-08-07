@@ -82,15 +82,15 @@ const staticPath = path.join(__dirname, 'uploads');
 app.use(express.static(staticPath));
 
 const storage = multer.diskStorage({
-    destination: function (req, file, callback) {
-      callback(null, 'uploads'); // Set the destination directory for uploads
-    },
-    filename: function (req, file, callback) {
-      callback(null, Date.now() + '-' + file.originalname); // Set the filename with timestamp
-    }
-  });
-  
-  const upload = multer({ storage: storage });
+  destination: function (req, file, callback) {
+    callback(null, 'uploads'); // Set the destination directory for uploads
+  },
+  filename: function (req, file, callback) {
+    callback(null, Date.now() + '-' + file.originalname); // Set the filename with timestamp
+  }
+});
+
+const upload = multer({ storage: storage });
 
 //   let arr = [{
 //     name: 'carImg-0',
@@ -113,9 +113,9 @@ const storage = multer.diskStorage({
 // let arr = []
 
 
-  app.post('/add-car', upload.array('images[]',7),authentication, carController.addCar);
+app.post('/add-car', upload.array('images[]', 7), authentication, carController.addCar);
 
-app.post('/contact-us',async (req,res,next)=>{
+app.post('/contact-us', async (req, res, next) => {
   let newContact = new Contact()
   newContact.name = req.body.name;
   newContact.email = req.body.email;
@@ -152,3 +152,5 @@ mongoose.connect(process.env.DATABASE_URL)
     });
   })
   .catch((err) => console.error("❌❌ Error connecting to server ❌❌", err));
+
+
