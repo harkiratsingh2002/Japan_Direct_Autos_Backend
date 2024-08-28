@@ -6,44 +6,44 @@ const EnquiryController = {
     // get details from req
 
     try {
-        let user = req.user;
-        console.log('user',user)
-        let enquiry = await Enquiry.find({
-          enquiredBy: user._id,
-          carId: req.body.carId,
-          completed: false,
+      let user = req.user;
+      console.log("user", user);
+      let enquiry = await Enquiry.find({
+        enquiredBy: user._id,
+        carId: req.body.carId,
+        completed: false,
+      });
+      if (enquiry.length > 0) {
+        // already enquired
+        return res.status(200).json({
+          message: "Your enquiry is already in process.",
         });
-        if (enquiry.length > 0) {
-          // already enquired
-          return res.status(200).json({
-            message: "Your enquiry is already in process.",
-          });
-        }
-        // fill in db
-        enquiry = new Enquiry();
-        enquiry.enquiredBy = user._id;
-        enquiry.enquiredByEmail = user.email;
-        enquiry.enquirySubject = req.body.enquirySubject;
-        enquiry.enquiryText = req.body.enquiryText;
-        enquiry.carId = req.body.carId;
-        enquiry.carLink = req.body.carLink;
-        enquiry.completed = false;
-        let savedEnquiry = await enquiry.save();
-        // send email to admin
-        const transport = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            type: "OAuth2",
-            user: "milansinghdav@gmail.com",
-            password: process.env.EMAIL_PASS,
-            clientId: process.env.CLIENT_ID,
-            clientSecret: process.env.CLIENT_SECRET,
-            refreshToken: process.env.REFRESH_TOKEN,
-            //   accessToken: accessToken,
-          },
-        });
-    
-        const htmlContent = ` 
+      }
+      // fill in db
+      enquiry = new Enquiry();
+      enquiry.enquiredBy = user._id;
+      enquiry.enquiredByEmail = user.email;
+      enquiry.enquirySubject = req.body.enquirySubject;
+      enquiry.enquiryText = req.body.enquiryText;
+      enquiry.carId = req.body.carId;
+      enquiry.carLink = req.body.carLink;
+      enquiry.completed = false;
+      let savedEnquiry = await enquiry.save();
+      // send email to admin
+      const transport = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          type: "OAuth2",
+          user: process.env.USER_1,
+          password: process.env.EMAIL_PASS_1,
+          clientId: process.env.CLIENT_ID,
+          clientSecret: process.env.CLIENT_SECRET,
+          refreshToken: process.env.REFRESH_TOKEN,
+          //   accessToken: accessToken,
+        },
+      });
+
+      const htmlContent = ` 
                     <h1>You Have a new enquiry</h1>
                     <h3>User Data</h3>
                     <table style="margin:3em; border: 1px solid black;">
@@ -72,146 +72,154 @@ const EnquiryController = {
                     <h4>Enquiry Id:- ${savedEnquiry._id}</h4>
     
                 `;
-                const mailOptions = {
-                    from: "milansinghdav@gmail.com",
-                    to: "milansinghdav@gmail.com",
-                    subject:
-                      "Important: New Enquiry",
-                    html: htmlContent,
-                  };
-                await transport.sendMail(mailOptions);
-                return res.status(201).json({
-                   message: 'Enquiry is sent to one of our representative. You will be contacted soon via email.' 
-                })
+      const mailOptions = {
+        from: process.env.USER_1,
+        to: process.env.USER_1,
+        subject: "Important: New Enquiry",
+        html: htmlContent,
+      };
+      await transport.sendMail(mailOptions);
+      return res.status(201).json({
+        message:
+          "Enquiry is sent to one of our representative. You will be contacted soon via email.",
+      });
     } catch (error) {
-        console.log('error while sending Enquiry:-',error)
-        return res.status(500).json({
-            message: 'Some server error occured.'
-        })
+      console.log("error while sending Enquiry:-", error);
+      return res.status(500).json({
+        message: "Some server error occured.",
+      });
     }
-   
   },
-  getFiveEnquiries: async (req,res,next) =>{
-
-    let page = req.body.page
+  getFiveEnquiries: async (req, res, next) => {
+    let page = req.body.page;
     let totalEnquiries = await Enquiry.find().countDocuments();
-    let enquiries = await Enquiry.find().populate('enquiredBy','email').skip(5 * (page - 1)).limit(5);
+    let enquiries = await Enquiry.find()
+      .populate("enquiredBy", "email")
+      .skip(5 * (page - 1))
+      .limit(5);
 
     return res.status(200).json({
       total: totalEnquiries,
-      enquiries: enquiries
-    })
+      enquiries: enquiries,
+    });
   },
-  deleteEnquiry: async (req,res,next) =>{
-
-    await Enquiry.findByIdAndDelete(req.body.enquiryId)
+  deleteEnquiry: async (req, res, next) => {
+    await Enquiry.findByIdAndDelete(req.body.enquiryId);
     return res.status(200).json({
-      message: 'Enquiry deleted succeessfully.'
-    })
+      message: "Enquiry deleted succeessfully.",
+    });
   },
-  completeEnquiry: async (req,res,next)=>{
+  completeEnquiry: async (req, res, next) => {
     try {
-      let enquiry = await Enquiry.findById(req.body.enquiryId)
-      if(!enquiry){
-         let newError = {
-          message: 'Enquiry not found.'
-         }
-         throw newError
+      let enquiry = await Enquiry.findById(req.body.enquiryId);
+      if (!enquiry) {
+        let newError = {
+          message: "Enquiry not found.",
+        };
+        throw newError;
       }
-      enquiry.completed = true
+      enquiry.completed = true;
       await enquiry.save();
       return res.status(200).json({
-        message: 'Enquiry Completed'
-      })
+        message: "Enquiry Completed",
+      });
     } catch (error) {
-      console.log('error while completing enquiry.',error);
+      console.log("error while completing enquiry.", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
   },
-  filterEnquiry: async (req,res,next)=>{
-    try {
-      const total = await Enquiry.find({ completed: req.body.completed}).countDocuments();
-      const filteredEnquiries = await Enquiry.find(
-        {
-          completed: req.body.completed
-        }
-      ).populate("enquiredBy","email").skip(5 *(req.body.page - 1)).limit(5)
-      return res.status(200).json({
-        total,
-        filteredEnquiries
-      })
-    } catch (error) {
-      console.log('err while filtering enquiry',error)
-      return res.status(500).json({
-        message: error.message
-      })
-    }
-  },
-  searchEnquiries: async(req,res,next) =>{
+  filterEnquiry: async (req, res, next) => {
     try {
       const total = await Enquiry.find({
-        $text: {$search: req.body.searchText}
-      }).countDocuments()
-      console.log('total search: ',total)
+        completed: req.body.completed,
+      }).countDocuments();
+      const filteredEnquiries = await Enquiry.find({
+        completed: req.body.completed,
+      })
+        .populate("enquiredBy", "email")
+        .skip(5 * (req.body.page - 1))
+        .limit(5);
+      return res.status(200).json({
+        total,
+        filteredEnquiries,
+      });
+    } catch (error) {
+      console.log("err while filtering enquiry", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
+  searchEnquiries: async (req, res, next) => {
+    try {
+      const total = await Enquiry.find({
+        $text: { $search: req.body.searchText },
+      }).countDocuments();
+      console.log("total search: ", total);
       const searchResult = await Enquiry.find({
-        $text: {$search: req.body.searchText}
-      }).populate("enquiredBy","email").skip(5 *(req.body.page - 1)).limit(5)
+        $text: { $search: req.body.searchText },
+      })
+        .populate("enquiredBy", "email")
+        .skip(5 * (req.body.page - 1))
+        .limit(5);
 
       return res.status(200).json({
         total,
-        searchResult
-      })
-
+        searchResult,
+      });
     } catch (error) {
-      console.log('err while filtering enquiry',error)
+      console.log("err while filtering enquiry", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
   },
-  searchEnquiriesByEmail: async(req,res,next)=>{
+  searchEnquiriesByEmail: async (req, res, next) => {
     try {
       const total = await Enquiry.find({
-        enquiredByEmail: (req.body.email).trim()
+        enquiredByEmail: req.body.email.trim(),
       }).countDocuments();
       let enquiries = await Enquiry.find({
-        enquiredByEmail: (req.body.email).trim()
-
-      }).populate("enquiredBy","email").skip(5 * (req.body.page - 1)).limit(5)
+        enquiredByEmail: req.body.email.trim(),
+      })
+        .populate("enquiredBy", "email")
+        .skip(5 * (req.body.page - 1))
+        .limit(5);
       return res.status(200).json({
         total,
-        searchResult: enquiries
-      })
+        searchResult: enquiries,
+      });
     } catch (error) {
-      console.log('err:-',error)
+      console.log("err:-", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
   },
-  getYourEnquiries: async (req,res,next)=>{
+  getYourEnquiries: async (req, res, next) => {
     try {
       let total = await Enquiry.find({
-        enquiredBy: req.user._id 
+        enquiredBy: req.user._id,
       }).countDocuments();
       let yourEnquiries = await Enquiry.find({
-        enquiredBy: req.user._id
-      }).skip(5 * (req.body.page - 1)).limit(5)
-  
+        enquiredBy: req.user._id,
+      })
+        .skip(5 * (req.body.page - 1))
+        .limit(5);
+
       return res.status(200).json({
         yourEnquiries,
-        total
-      })
+        total,
+      });
     } catch (error) {
-      console.log('err:-',error)
+      console.log("err:-", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
-   
-  }
+  },
 };
 
-module.exports = EnquiryController
+module.exports = EnquiryController;

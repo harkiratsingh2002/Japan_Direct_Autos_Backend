@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const secret = process.env.JWT_SECRET;
 const nodemailer = require("nodemailer");
 
-
 const userController = {
   addAdmin: async (req, res, next) => {
     try {
@@ -96,7 +95,7 @@ const userController = {
     try {
       let userResult = await User.find({
         email: req.body.email,
-      });
+      }).populate("wishlist");
       if (userResult.length == 0) {
         return res.status(401).json({
           message: "Wrong email or password.",
@@ -118,7 +117,7 @@ const userController = {
         message: "Logged In succeessfully.",
         userData: {
           userToken: token,
-
+          wishlist: data.wishlist ? data.wishlist : [],
           firstName: data.firstName,
           role: data.role,
         },
@@ -133,7 +132,7 @@ const userController = {
 
     let user = await User.find({
       email: email,
-    });
+    }).populate("wishlist");
     console.log("user data:-", user);
     if (user.length > 0) {
       if (user[0].role.toLowerCase() == "admin") {
@@ -156,12 +155,12 @@ const userController = {
       const payload = user;
       token = jwt.sign(payload, secret, { expiresIn: "2h" });
     }
-
+    let data = { ...user[0]._doc };
     return res.status(200).json({
       message: "Logged In succeessfully.",
       userData: {
         userToken: token,
-
+        wishlist: data.wishlist ? data.wishlist : [],
         firstName: firstName,
         role: role,
       },
@@ -221,247 +220,331 @@ const userController = {
       });
     }
   },
-  getFiveUsers: async (req,res,next)=>{
-    let page = req.body.page
+  getFiveUsers: async (req, res, next) => {
+    let page = req.body.page;
     let total = await User.find({}).countDocuments();
-    let fiveUsers = await User.find({}).skip(5 *(page - 1)).limit(5);
+    let fiveUsers = await User.find({})
+      .skip(5 * (page - 1))
+      .limit(5);
 
     return res.status(200).json({
       total,
-      fiveUsers
-    })
-
+      fiveUsers,
+    });
   },
-  getUserData: async (req,res,next) =>{
+  getUserData: async (req, res, next) => {
     try {
-      let user = await User.findById(req.body.userId)
-      if(!user){
+      let user = await User.findById(req.body.userId);
+      if (!user) {
         let newError = {
-          message: 'user not found'
-        }
+          message: "user not found",
+        };
         throw newError;
-      }
-      else{
+      } else {
         let obj = {
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
           role: user.role,
           password: user.password,
-          confirmPassword: user.password
-        }
+          confirmPassword: user.password,
+        };
         return res.status(200).json({
           userData: obj,
-        })
+        });
       }
     } catch (error) {
-      console.log('err while getting userData:- ',error);
+      console.log("err while getting userData:- ", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
   },
-  editUserAdmin: async (req,res,next)=>{
+  editUserAdmin: async (req, res, next) => {
     try {
       if (req.user.role.toLowerCase() == "admin") {
         let user = await User.findById(req.body.userId);
-        if(!user){
+        if (!user) {
           let newError = {
-            message: 'user not found'
-          }
+            message: "user not found",
+          };
           throw newError;
-        }
-        else{
-          let {firstName , lastName, email, role} = req.body
+        } else {
+          let { firstName, lastName, email, role } = req.body;
           user.firstName = firstName;
           user.lastName = lastName;
           user.email = email;
           user.role = role;
           await user.save();
           return res.status(200).json({
-            message: 'user updated successfully.'
-          })
+            message: "user updated successfully.",
+          });
         }
-      }
-      else {
+      } else {
         let newError = {
-          message: 'you are unauthorized to update'
-        }
+          message: "you are unauthorized to update",
+        };
         throw newError;
       }
-    }
-    catch(err){
-      console.log('user updating error:- ',err);
+    } catch (err) {
+      console.log("user updating error:- ", err);
       return res.status(500).json({
-        message: err.message
-      })
+        message: err.message,
+      });
     }
   },
-  searchUser: async(req,res,next)=>{
+  searchUser: async (req, res, next) => {
     try {
       const total = await User.find({
-        $text: {$search: req.body.searchText}
-      }).countDocuments()
+        $text: { $search: req.body.searchText },
+      }).countDocuments();
       const fiveUsers = await User.find({
-        $text: {$search: req.body.searchText}
-      }).skip(5 *(req.body.page - 1)).limit(5)
+        $text: { $search: req.body.searchText },
+      })
+        .skip(5 * (req.body.page - 1))
+        .limit(5);
       return res.status(200).json({
         fiveUsers,
-        total
-      })
+        total,
+      });
     } catch (error) {
-      console.log('error while searching user:- ',error);
+      console.log("error while searching user:- ", error);
       return res.status(500).json({
-        message: 'some server error'
-      })
+        message: "some server error",
+      });
     }
   },
-  searchUserByEmail: async(req,res,next)=>{
+  searchUserByEmail: async (req, res, next) => {
     try {
       const user = await User.find({
-        email: req.body.email
-      })
-      if(user.length == 0){
+        email: req.body.email,
+      });
+      if (user.length == 0) {
         let newError = {
-          message: 'user not found'
-        }
-        throw newError
-      }
-      else{
+          message: "user not found",
+        };
+        throw newError;
+      } else {
         return res.status(200).json({
           user,
-          total: 1
-        })
-
+          total: 1,
+        });
       }
     } catch (error) {
-      console.log('error while search user by email:- ',error);
+      console.log("error while search user by email:- ", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
   },
-  deleteUser: async (req,res,next)=>{
+  deleteUser: async (req, res, next) => {
     await User.findByIdAndDelete(req.body.userId);
     return res.status(200).json({
-      message: 'Deleted Successfully.'
-    })
+      message: "Deleted Successfully.",
+    });
   },
-  forgotPassword: async (req,res,next)=>{
-    try{
-
+  forgotPassword: async (req, res, next) => {
+    try {
       const transport = nodemailer.createTransport({
         service: "gmail",
         auth: {
           type: "OAuth2",
-          user: "milansinghdav@gmail.com",
-          password: process.env.EMAIL_PASS,
+          user: process.env.USER_1,
+          password: process.env.EMAIL_PASS_1,
           clientId: process.env.CLIENT_ID,
           clientSecret: process.env.CLIENT_SECRET,
           refreshToken: process.env.REFRESH_TOKEN,
           //   accessToken: accessToken,
         },
-      })
-  
+      });
+
       const htmlContent = ` 
                       <h1>Otp for changing password.</h1>
                       <h3>Otp:- ${req.body.otp}</h3>
-                      `
-                      const mailOptions = {
-                        from: "milansinghdav@gmail.com",
-                        to: req.body.email,
-                        subject:
-                          "Important: otp for changing password.",
-                        html: htmlContent,
-                      };
-                    await transport.sendMail(mailOptions);
-                    return res.status(201).json({
-                       message: 'otp sent.' 
-                    })
-    }
-    catch(error){
-      console.log('error while sending Otp:-',error)
+                      `;
+      const mailOptions = {
+        from: process.env.USER_1,
+        to: req.body.email,
+        subject: "Important: otp for changing password.",
+        html: htmlContent,
+      };
+      await transport.sendMail(mailOptions);
+      return res.status(201).json({
+        message: "otp sent.",
+      });
+    } catch (error) {
+      console.log("error while sending Otp:-", error);
       return res.status(500).json({
-          message: 'Some server error occured.'
-      })
+        message: "Some server error occured.",
+      });
     }
   },
-  changePassword: async (req,res,next)=>{
+  changePassword: async (req, res, next) => {
     try {
-      
       let user = await User.findOne({
-        email: req.body.email
-      })
+        email: req.body.email,
+      });
 
-      if(!user){
+      if (!user) {
         let newError = {
-          message: 'user not found'
-        }
+          message: "user not found",
+        };
         throw newError;
-      }
-      else{
+      } else {
         let hash = bcryptjs.hashSync(req.body.newPassword, salt);
-      
+
         user.password = hash;
 
         await user.save();
         return res.status(201).json({
-          message: 'Password changed.'
-        })
+          message: "Password changed.",
+        });
       }
-
     } catch (error) {
-      console.log('error while changing password:- ',error);
+      console.log("error while changing password:- ", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
   },
-  getUser: async (req,res,next)=> {
-
+  getUser: async (req, res, next) => {
     return res.status(200).json({
-      user: req.user
-    })
+      user: req.user,
+    });
   },
-  updateUser: async (req,res,next)=>{
+  updateUser: async (req, res, next) => {
     try {
-      let user =  await User.findOne({email: req.body.oldEmail})
-      if(!user){
+      let user = await User.findOne({ email: req.body.oldEmail });
+      if (!user) {
         let newError = {
-          message: 'user not found.'
-        }
-        throw newError
-      }
-      else{
-        if(req.body.oldEmail != req.body.newUserData.email){
-
+          message: "user not found.",
+        };
+        throw newError;
+      } else {
+        if (req.body.oldEmail != req.body.newUserData.email) {
           let chkUser = await User.findOne({
-            email: req.body.newUserData.email
-          })
-          if(chkUser){
+            email: req.body.newUserData.email,
+          });
+          if (chkUser) {
             let newError = {
-              message: 'User with that email already exist'
-            }
+              message: "User with that email already exist",
+            };
             throw newError;
           }
         }
-        user.firstName = req.body.newUserData.firstName
-        user.lastName = req.body.newUserData.lastName
-        user.email = req.body.newUserData.email
+        user.firstName = req.body.newUserData.firstName;
+        user.lastName = req.body.newUserData.lastName;
+        user.email = req.body.newUserData.email;
         await user.save();
 
         return res.status(200).json({
-          message: 'user updated successfully.'
-        })
-
+          message: "user updated successfully.",
+        });
       }
     } catch (error) {
-      console.log('err while updating user',error);
+      console.log("err while updating user", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
-  }
+  },
+  addToWishlist: async (req, res, next) => {
+    try {
+      let usr = await User.findById(req.user._id);
+      if (!usr) {
+        let newError = {
+          message: "user not found.",
+        };
+        throw newError;
+      }
+      // let carId = usr.wishlist.find((item) => {
+      //   return item == req.body.carId;
+      // });
+      if (usr.wishlist.includes(req.body.carId)) {
+        let newError = {
+          message: "Car already added to wishlist",
+        };
+        throw newError;
+      } else if (usr.wishlist.length >= 25) {
+        let newError = {
+          message: "Maximum 25 cars can be added to wishlist.",
+        };
+        throw newError;
+      } else {
+        usr.wishlist.unshift(req.body.carId);
+        await usr.save();
+        return res.status(201).json({
+          message: "Car added to wishlist.",
+        });
+      }
+    } catch (error) {
+      console.log("err while adding to wishlist", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
+  getWishlistCars: async (req, res, next) => {
+    try {
+      let usr = await User.findById(req.user._id).populate("wishlist");
+      if (!usr) {
+        let newError = {
+          message: "user not found.",
+        };
+        throw newError;
+      } else {
+        return res.status(200).json({
+          cars: usr.wishlist,
+        });
+      }
+    } catch (error) {
+      console.log("err while getting wishlist", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
+  removeFromWishlist: async (req, res, next) => {
+    try {
+      let usr = await User.findById(req.user._id);
+      if (!usr) {
+        let newError = {
+          message: "user not found.",
+        };
+        throw newError;
+      }
+      let index = usr.wishlist.indexOf(req.body.carId);
+      usr.wishlist.splice(index, 1);
+      await usr.save();
+      return res.status(201).json({
+        message: "Removed successfully.",
+      });
+    } catch (error) {
+      console.log("err while deleting from wishlist", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
+  getWishlistLength: async (req, res, next) => {
+    try {
+      let usr = await User.findById(req.user._id);
+      if (!usr) {
+        let newError = {
+          message: "user not found.",
+        };
+        throw newError;
+      }
+      return res.status(200).json({
+        length: usr.wishlist.length,
+      });
+    } catch (error) {
+      console.log("err while getting wishlist length", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
 };
 
 module.exports = userController;
