@@ -21,6 +21,7 @@ const subscriberRouter = require('./Routes/subscriberRoutes');
 const subscriberController = require('./Controllers/subscriberController');
 const authentication = require('./Middlewares/authentication');
 const EnquiryRouter = require('./Routes/EnquiryRoutes');
+const countRouter = require('./Routes/countRoutes');
 // const passport = require('passport');
 // const OAuth2Strategy = require('passport-google-oauth2').Strategy
 
@@ -79,6 +80,7 @@ app.use(carRouter);
 app.use(reviewRouter);
 app.use(subscriberRouter);
 app.use(EnquiryRouter);
+app.use(countRouter); // Register the count routes
 
 const staticPath = path.join(__dirname, 'uploads');
 app.use(express.static(staticPath));
