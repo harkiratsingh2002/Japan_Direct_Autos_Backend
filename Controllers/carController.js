@@ -5,6 +5,7 @@ const User = require("../Models/User");
 const nodemailer = require("nodemailer");
 const nodemailerTransport = require("nodemailer-sendgrid-transport");
 const fs = require("fs");
+const AdminCarInfo = require("../Models/AdminCarInfo");
 
 const carController = {
   // addCar: (req,res,next)=>{
@@ -103,6 +104,25 @@ const carController = {
   //     cars: cars,
   //   });
   // },
+  getRentalCars: async (req, res, next) => {
+    let page = req.body.page;
+    console.log("page:-", page);
+    let itemsPerPage = 6;
+    let count = await Car.find({
+      oldOrNew: "Rental",
+    }).countDocuments();
+    let cars = await Car.find({
+      oldOrNew: "Rental",
+    })
+      .skip(itemsPerPage * (page - 1))
+      .limit(itemsPerPage);
+    console.log("All Rental cars:- ", cars);
+    res.status(200).json({
+      message: "All Rental Cars",
+      cars: cars,
+      count: count,
+    });
+  },
   getCar: async (req, res, next) => {
     console.log("request reached...!!!");
     try {
@@ -142,9 +162,15 @@ const carController = {
 
       let newCar = new Car();
       let {
+        stockId,
+        make,
+        grade,
+        chassisNo,
+        odometer,
+        model,
         name,
         oldOrNew,
-        carType,
+        body,
         year,
         price,
         brand,
@@ -158,9 +184,15 @@ const carController = {
         color,
       } = req.body;
       newCar.adminId = adminid;
+      newCar.stockId = stockId;
+      newCar.make = make;
+      newCar.grade = grade;
+      newCar.chassisNo = chassisNo;
+      newCar.odometer = odometer;
+      newCar.model = model;
       newCar.name = name;
       newCar.oldOrNew = oldOrNew;
-      newCar.carType = carType;
+      newCar.body = body;
       newCar.year = year;
       newCar.price = price;
       newCar.brand = brand;
@@ -192,7 +224,9 @@ const carController = {
         };
         throw newError;
       }
-      return res.status(201).json({ message: "added succefully...!!" });
+      return res
+        .status(201)
+        .json({ message: "added succefully...!!", carId: savedCar._id });
 
       // code to send email to subscribers.
     } catch (err) {
@@ -218,6 +252,18 @@ const carController = {
     try {
       let sevenUsedCars = await Car.find({
         oldOrNew: "Used",
+      }).limit(7);
+      return res.status(200).json({
+        cars: sevenUsedCars,
+      });
+    } catch (error) {
+      console.log("err while getting 7 cars", error);
+    }
+  },
+  getSevenRentalCars: async (req, res, next) => {
+    try {
+      let sevenUsedCars = await Car.find({
+        oldOrNew: "Rental",
       }).limit(7);
       return res.status(200).json({
         cars: sevenUsedCars,
@@ -263,8 +309,7 @@ const carController = {
         };
         throw newError;
       }
-      car.images.forEach((imgPath)=>{
-
+      car.images.forEach((imgPath) => {
         fs.unlink(imgPath, (err) => {
           if (err) {
             console.error("Failed to delete image file:", err);
@@ -272,41 +317,75 @@ const carController = {
             console.log("Image file deleted successfully!");
           }
         });
-      })
+      });
       await Car.findByIdAndDelete(req.body.carId);
-
+      await AdminCarInfo.findOneAndDelete({
+        carId: req.body.carId,
+      });
       return res.status(201).json({
-        message: 'Car deleted successfully.'
-      })
-
+        message: "Car deleted successfully.",
+      });
     } catch (err) {
       return res.status(500).json({
         message: err.message,
       });
     }
   },
-  searchCars: async (req,res,next)=> {
+  searchCars: async (req, res, next) => {
     try {
       const total = await Car.find({
-        $text: {$search: req.body.searchText}
-      }).countDocuments()
-      console.log('total search: ',total)
+        $text: { $search: req.body.searchText },
+      }).countDocuments();
+      console.log("total search: ", total);
       const searchResult = await Car.find({
-        $text: {$search: req.body.searchText}
-      }) .populate("adminId", "email").skip(5 *(req.body.page - 1)).limit(5)
+        $text: { $search: req.body.searchText },
+      })
+        .populate("adminId", "email")
+        .skip(5 * (req.body.page - 1))
+        .limit(5);
 
       return res.status(200).json({
         total,
-        searchResult
-      })
-
+        searchResult,
+      });
     } catch (error) {
-      console.log('err while searching Cars',error)
+      console.log("err while searching Cars", error);
       return res.status(500).json({
-        message: error.message
-      })
+        message: error.message,
+      });
     }
-  }
+  },
+  addAdminCarInfo: async (req, res, next) => {
+    try {
+      let newAdminInfo = new AdminCarInfo();
+      newAdminInfo.carId = req.body.carId;
+      newAdminInfo.costPrice = req.body.adminInfo.costPrice;
+      newAdminInfo.brokerForwarderHandlingFees =
+        req.body.adminInfo.brokerForwarderHandlingFees;
+      newAdminInfo.preShipInspection = req.body.adminInfo.preShipInspection;
+      newAdminInfo.inlandTransport = req.body.adminInfo.inlandTransport;
+      newAdminInfo.freightInsurance = req.body.adminInfo.freightInsurance;
+      newAdminInfo.gst = req.body.adminInfo.gst;
+      newAdminInfo.customClearance = req.body.adminInfo.customClearance;
+      await newAdminInfo.save();
+      return res.status(201).json({
+        message: "admin info added.",
+      });
+    } catch (error) {
+      console.log("err while adding admin info Car", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
+  getCarAdminInfo: async (req, res, next) => {
+    let carAdminInfo = await AdminCarInfo.findOne({
+      carId: req.body.carId,
+    });
+    return res.status(200).json({
+      carAdminInfo: carAdminInfo,
+    });
+  },
 };
 
 module.exports = carController;

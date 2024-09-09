@@ -21,6 +21,7 @@ const UserSchema = new mongoose.Schema({
       ref: "Car",
     },
   ],
+  twoStepVerify: Boolean,
 });
 UserSchema.index({ "$**": "text" });
 

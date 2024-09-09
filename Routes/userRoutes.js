@@ -44,6 +44,17 @@ userRouter.get(
   authentication,
   userController.getWishlistLength
 );
+userRouter.post("/check-two-step-verify", userController.checkTwoStepVerify);
+userRouter.get(
+  "/enable-two-step-verify",
+  authentication,
+  userController.enableTwoStepVerify
+);
+userRouter.get(
+  "/disable-two-step-verify",
+  authentication,
+  userController.disableTwoStepVerify
+);
 
 // userRouter.post('/login',userController.login)
 //userRouter.post("/login", userController.login);

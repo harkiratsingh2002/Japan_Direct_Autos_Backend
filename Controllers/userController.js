@@ -76,7 +76,7 @@ const userController = {
         throw newError;
       }
       let newUser = new User();
-      let { firstName, lastName, email, password } = req.body;
+      let { firstName, lastName, email, password, twoStepVerify } = req.body;
       newUser.firstName = firstName;
       newUser.lastName = lastName;
       newUser.email = email;
@@ -84,6 +84,7 @@ const userController = {
       newUser.password = hash;
 
       newUser.role = "customer";
+      newUser.twoStepVerify = twoStepVerify;
       let savedUser = await newUser.save();
       return res.status(201).json({ message: "user Added successfully..!" });
     } catch (err) {
@@ -111,6 +112,46 @@ const userController = {
       let data = { ...userResult[0]._doc };
       delete data.password;
       console.log("data:- ", data);
+      // 2 step verify
+      if (userResult[0].twoStepVerify) {
+        const min = 1000; // Minimum 4-digit number
+        const max = 9999; // Maximum 4-digit number
+
+        // Generate a random number between min and max
+
+        const otp = Math.floor(Math.random() * (max - min + 1)) + min;
+        // send otp to email
+        const transport = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            type: "OAuth2",
+            user: process.env.USER,
+            password: process.env.EMAIL_PASS,
+            clientId: process.env.CLIENT_ID_2,
+            clientSecret: process.env.CLIENT_SECRET_2,
+            refreshToken: process.env.REFRESH_TOKEN_2,
+            //   accessToken: accessToken,
+          },
+        });
+
+        const htmlContent = ` 
+                        <h1>Otp for verification.</h1>
+                        <h3>Otp:- ${otp}</h3>
+                        `;
+        const mailOptions = {
+          from: process.env.USER,
+          to: req.body.email,
+          subject: "Important: otp for 2 step verification.",
+          html: htmlContent,
+        };
+        await transport.sendMail(mailOptions);
+        // send otp and payload data to frontend for verification
+        return res.status(200).json({
+          twoStepVerify: true,
+          otp: otp,
+          payloadData: data,
+        });
+      }
       const payload = data;
       const token = jwt.sign(payload, secret, { expiresIn: "10h" });
       return res.status(200).json({
@@ -126,6 +167,20 @@ const userController = {
       console.log("error while signing up..!!", err);
       return res.status(401).json({ message: err.message });
     }
+  },
+  checkTwoStepVerify: async (req, res, next) => {
+    // get payload data and login user
+    const payload = req.body.payloadData;
+    const token = jwt.sign(payload, secret, { expiresIn: "10h" });
+    return res.status(200).json({
+      message: "Logged In succeessfully.",
+      userData: {
+        userToken: token,
+        wishlist: payload.wishlist ? payload.wishlist : [],
+        firstName: payload.firstName,
+        role: payload.role,
+      },
+    });
   },
   signUpGoogle: async (req, res, next) => {
     const { firstName, lastName, email, role } = req.body;
@@ -349,11 +404,11 @@ const userController = {
         service: "gmail",
         auth: {
           type: "OAuth2",
-          user: process.env.USER_1,
-          password: process.env.EMAIL_PASS_1,
-          clientId: process.env.CLIENT_ID,
-          clientSecret: process.env.CLIENT_SECRET,
-          refreshToken: process.env.REFRESH_TOKEN,
+          user: process.env.USER,
+          password: process.env.EMAIL_PASS,
+          clientId: process.env.CLIENT_ID_2,
+          clientSecret: process.env.CLIENT_SECRET_2,
+          refreshToken: process.env.REFRESH_TOKEN_2,
           //   accessToken: accessToken,
         },
       });
@@ -363,7 +418,7 @@ const userController = {
                       <h3>Otp:- ${req.body.otp}</h3>
                       `;
       const mailOptions = {
-        from: process.env.USER_1,
+        from: process.env.USER,
         to: req.body.email,
         subject: "Important: otp for changing password.",
         html: htmlContent,
@@ -408,8 +463,13 @@ const userController = {
     }
   },
   getUser: async (req, res, next) => {
+    let twoStepVerify = false;
+    if (req.user.hasOwnProperty("twoStepVerify")) {
+      twoStepVerify = req.user.twoStepVerify;
+    }
     return res.status(200).json({
       user: req.user,
+      twoStepVerify: twoStepVerify,
     });
   },
   updateUser: async (req, res, next) => {
@@ -540,6 +600,50 @@ const userController = {
       });
     } catch (error) {
       console.log("err while getting wishlist length", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
+  enableTwoStepVerify: async (req, res, next) => {
+    try {
+      let user = await User.findById(req.user._id);
+      if (!user) {
+        let error = {
+          message: "user not found",
+        };
+        throw error;
+      } else {
+        user.twoStepVerify = true;
+        await user.save();
+        return res.status(200).json({
+          message: "Enabled Successfully",
+        });
+      }
+    } catch (error) {
+      console.log("err while enabling two step verify", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
+  disableTwoStepVerify: async (req, res, next) => {
+    try {
+      let user = await User.findById(req.user._id);
+      if (!user) {
+        let error = {
+          message: "user not found",
+        };
+        throw error;
+      } else {
+        user.twoStepVerify = false;
+        await user.save();
+        return res.status(200).json({
+          message: "Disabled Successfully",
+        });
+      }
+    } catch (error) {
+      console.log("err while Disabling two step verify", error);
       return res.status(500).json({
         message: error.message,
       });

@@ -48,7 +48,7 @@ const reviewsController = {
   getReviews: async (req, res, next) => {
     let topReview = [];
     let topReviewExist = false;
-    console.log('user', req.user);
+    console.log("user", req.user);
     if (req.user) {
       let userId = req.user._id;
       console.log("req user", req.user);
@@ -104,7 +104,7 @@ const reviewsController = {
         topReviewExist = true;
       }
       console.log("unique merged Reviews", uniquemergedReviews);
-      console.log('Response:- ',res)
+      console.log("Response:- ", res);
       return res.status(200).json({
         message: "reviews fetched successfully.",
         reviews: uniquemergedReviews,
@@ -178,6 +178,26 @@ const reviewsController = {
       message: "no top review exist",
       topReviewExist: false,
     });
+  },
+  getRecentReviews: async (req, res, next) => {
+    try {
+      const recentReviews = await Review.find()
+        .sort({ createdAt: -1 }) // Sorting by the date created in descending order
+        .limit(5) // Limiting to 5 reviews
+        .populate({ path: "reviewdBy", select: "firstName lastName" }) // Populating user details
+        .populate({ path: "carId", select: "_id name" }); // Assuming you want to display the car name
+
+      return res.status(200).json({
+        message: "Recent reviews fetched successfully.",
+        data: recentReviews,
+      });
+    } catch (error) {
+      console.log("Error fetching recent reviews", error);
+      return res.status(500).json({
+        message: "Error fetching recent reviews",
+        error: error.message,
+      });
+    }
   },
 };
 

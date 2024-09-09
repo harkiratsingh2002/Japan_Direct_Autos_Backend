@@ -21,7 +21,7 @@ const ReviewSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: "User",
-        unique: false 
+        unique: false
     },
     createdAt: {
         type: Date,
@@ -31,4 +31,4 @@ const ReviewSchema = new mongoose.Schema({
 
 const Review = mongoose.model("Review", ReviewSchema);
 
-module.exports =  Review;
+module.exports = Review;

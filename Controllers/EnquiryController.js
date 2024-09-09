@@ -34,11 +34,11 @@ const EnquiryController = {
         service: "gmail",
         auth: {
           type: "OAuth2",
-          user: process.env.USER_1,
-          password: process.env.EMAIL_PASS_1,
-          clientId: process.env.CLIENT_ID,
-          clientSecret: process.env.CLIENT_SECRET,
-          refreshToken: process.env.REFRESH_TOKEN,
+          user: process.env.USER,
+          password: process.env.EMAIL_PASS,
+          clientId: process.env.CLIENT_ID_2,
+          clientSecret: process.env.CLIENT_SECRET_2,
+          refreshToken: process.env.REFRESH_TOKEN_2,
           //   accessToken: accessToken,
         },
       });

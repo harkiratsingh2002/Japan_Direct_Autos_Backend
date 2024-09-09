@@ -6,10 +6,12 @@ const reviewAuth = require('../Middlewares/reviewAuth.js');
 
 const reviewRouter = express.Router();
 
-reviewRouter.post("/post-review",authentication, reviewsController.postReview);
-reviewRouter.post("/get-reviews",reviewAuth, reviewsController.getReviews);
-reviewRouter.post('/get-reviewBarData',reviewsController.getReviewBarData);
-reviewRouter.post('/check-topReview',reviewAuth,reviewsController.checkTopReview);
+reviewRouter.post("/post-review", authentication, reviewsController.postReview);
+reviewRouter.post("/get-reviews", reviewAuth, reviewsController.getReviews);
+reviewRouter.post('/get-reviewBarData', reviewsController.getReviewBarData);
+reviewRouter.post('/check-topReview', reviewAuth, reviewsController.checkTopReview);
+reviewRouter.get('/reviews/recent', reviewsController.getRecentReviews);
+
 
 
 module.exports = reviewRouter;

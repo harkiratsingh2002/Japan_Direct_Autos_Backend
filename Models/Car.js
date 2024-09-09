@@ -7,11 +7,18 @@ const CarSchema = new mongoose.Schema({
     required: true,
     unique: false,
   },
+
   name: String,
   oldOrNew: String,
-  carType: String,
+  body: String,
   year: String,
   price: String,
+  stockId: String,
+  make: String,
+  grade: String,
+  chassisNo: String,
+  odometer: String,
+  model: String,
   brand: String,
   description: String,
   images: {
@@ -32,7 +39,7 @@ const CarSchema = new mongoose.Schema({
     required: false,
   },
 });
-CarSchema.index({'$**': 'text'});
+CarSchema.index({ "$**": "text" });
 const Car = mongoose.model("Car", CarSchema);
 
-module.exports =  Car
+module.exports = Car;
