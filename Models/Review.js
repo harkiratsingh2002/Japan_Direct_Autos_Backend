@@ -2,6 +2,22 @@
 
 const mongoose = require("mongoose");
 
+const ReplySchema = new mongoose.Schema({
+    text: {
+        type: String,
+        required: true
+    },
+    repliedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: "User"
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
 const ReviewSchema = new mongoose.Schema({
 
     carId: {

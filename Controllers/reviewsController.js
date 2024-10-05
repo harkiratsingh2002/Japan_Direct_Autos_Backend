@@ -183,9 +183,10 @@ const reviewsController = {
     try {
       const recentReviews = await Review.find()
         .sort({ createdAt: -1 }) // Sorting by the date created in descending order
-        .limit(5) // Limiting to 5 reviews
+        .limit(4) // Limiting to 4 reviews
         .populate({ path: "reviewdBy", select: "firstName lastName" }) // Populating user details
         .populate({ path: "carId", select: "_id name" }); // Assuming you want to display the car name
+
 
       return res.status(200).json({
         message: "Recent reviews fetched successfully.",
@@ -199,6 +200,7 @@ const reviewsController = {
       });
     }
   },
+
 };
 
 module.exports = reviewsController;
