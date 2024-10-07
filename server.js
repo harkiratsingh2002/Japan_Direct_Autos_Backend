@@ -147,12 +147,12 @@ const cronJob = cron.schedule('0 9 * * MON', () => {
 })
 
 cronJob.start();
-
+const PORT = process.env.PORT || 7777
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => {
     console.log("Connection established...🔗");
     app.listen(process.env.PORT, () => {
-      console.log(`Server running at port ${process.env.PORT}`);
+      console.log(`Server running at port ${PORT}`);
     });
   })
   .catch((err) => console.error("❌❌ Error connecting to server ❌❌", err));
