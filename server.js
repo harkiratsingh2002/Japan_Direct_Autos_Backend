@@ -115,6 +115,9 @@ const upload = multer({ storage: storage });
 // ]
 
 // let arr = []
+app.get('/', (req, res) => {
+  res.send('Welcome to the Cars Dealing Backend!');
+});
 
 
 app.post('/add-car', upload.array('images[]', 7), authentication, carController.addCar);
