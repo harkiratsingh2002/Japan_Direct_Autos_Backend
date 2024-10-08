@@ -151,8 +151,8 @@ cronJob.start();
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => {
     console.log("Connection established...🔗");
-    app.listen(process.env.PORT, () => {
-      console.log(`Server running at port ${process.env.PORT}`);
+    app.listen(process.env.PORT || 7777, () => {
+      console.log(`Server running at port ${process.env.PORT || 7777}`);
     });
   })
   .catch((err) => console.error("❌❌ Error connecting to server ❌❌", err));
