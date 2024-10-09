@@ -8,54 +8,6 @@ const fs = require("fs");
 const AdminCarInfo = require("../Models/AdminCarInfo");
 
 const carController = {
-  // addCar: (req,res,next)=>{
-  //     // create new car instance
-  //     try {
-  //         let user = User.find({email:'milansinghdav@gmail.com'})
-  //         if(user.length == 0){
-  //             return res.status(401).json({message: 'unauthorized'})
-  //         }
-  //         let adminid = user[0]._id;
-
-  //         let newCar = new Car();
-  //         let { name, carType, year,price,brand,engine,suspension,transmission,fuelType,mileage,seatingCapacity,color} = req.body;
-  //         newCar.adminId = adminid;
-  //         newCar.name = name;
-  //         newCar.carType = carType;
-  //         newCar.year  = year;
-  //         newCar.price = price;
-  //         newCar.brand = brand;
-  //         newCar.engine = engine;
-  //         newCar.mileage = mileage;
-  //         newCar.suspension = suspension;
-  //         newCar.transmission = transmission;
-  //         newCar.fuelType = fuelType;
-  //         newCar.seatingCapacity = seatingCapacity;
-  //         newCar.color = color;
-
-  //         let savedCar = newCar.save();
-  //         if(!savedCar._id){
-  //             let newError = {
-  //                 status : 401,
-  //                 message: 'error while adding car in server'
-  //             }
-  //             throw newError;
-  //         }
-  //         req.body.carId = savedCar._id;
-  //         next();
-
-  //     }
-  //     catch(err){
-  //         console.log('car adding errors:- ',err)
-  //         return res.status(401).json({
-  //             message: 'error while adding car in server'
-  //         })
-  //     }
-
-  //     // add data to instance
-  //     // save car instance
-
-  // }
 
   getNewCars: async (req, res, next) => {
     let page = req.body.page;
@@ -333,28 +285,52 @@ const carController = {
   },
   searchCars: async (req, res, next) => {
     try {
+      const { searchText, page, sortOption } = req.body;
+
+      // Default sort criteria, by relevance (MongoDB's default with text search)
+      let sortCriteria = { score: { $meta: "textScore" } };
+
+      // Modify sortCriteria based on user selection
+      if (sortOption === "price_asc") {
+        sortCriteria = { price: 1 }; // Sort by price ascending
+      } else if (sortOption === "price_desc") {
+        sortCriteria = { price: -1 }; // Sort by price descending
+      } else if (sortOption === "year_asc") {
+        sortCriteria = { year: 1 }; // Sort by year ascending (oldest first)
+      } else if (sortOption === "year_desc") {
+        sortCriteria = { year: -1 }; // Sort by year descending (newest first)
+      }
+
+      // MongoDB text search with sorting based on the criteria
       const total = await Car.find({
-        $text: { $search: req.body.searchText },
+        $text: { $search: searchText },
       }).countDocuments();
+
       console.log("total search: ", total);
+
+      // Perform the search with sorting and pagination
       const searchResult = await Car.find({
-        $text: { $search: req.body.searchText },
+        $text: { $search: searchText },
       })
         .populate("adminId", "email")
-        .skip(5 * (req.body.page - 1))
-        .limit(5);
+        .sort(sortCriteria) // Apply sorting criteria
+        .skip(5 * (page - 1)) // Pagination skip
+        .limit(5) // Limit results per page
+        .exec(); // Execute the query
 
       return res.status(200).json({
         total,
         searchResult,
       });
     } catch (error) {
-      console.log("err while searching Cars", error);
+      console.log("Error while searching Cars", error);
       return res.status(500).json({
         message: error.message,
       });
     }
   },
+
+
   addAdminCarInfo: async (req, res, next) => {
     try {
       let newAdminInfo = new AdminCarInfo();

@@ -11,8 +11,12 @@ const CarSchema = new mongoose.Schema({
   name: String,
   oldOrNew: String,
   body: String,
-  year: String,
-  price: String,
+  year: {
+    type: Number, // Change year to Number for sorting
+  },
+  price: {
+    type: Number,
+  },
   stockId: String,
   make: String,
   grade: String,
