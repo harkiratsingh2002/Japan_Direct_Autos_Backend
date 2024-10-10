@@ -38,8 +38,8 @@ const subscriberController = {
     try {
       const carDataCount = await Car.find({}).countDocuments();
       const carData = await Car.find({})
-        .skip(carDataCount - 3)
-        .limit(3);
+        .skip(carDataCount - 1)
+        .limit(1);
 
       //   const oauth2Client = new google.auth.OAuth2(
       //     "378521593401-9b7n8l6qtbfkc2ob28e6umqtj5ukacmc.apps.googleusercontent.com",
@@ -72,7 +72,7 @@ const subscriberController = {
       // }
 
       const htmlContent = `
-        <h1>Latest Cars Added to Our Collection!</h1>
+        <h1>Latest Car Added to Our Collection!</h1>
     <p>We're excited to announce the arrival of three new cars to our collection:</p>
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
       ${carData
@@ -104,7 +104,7 @@ const subscriberController = {
           from: process.env.USER,
           to: subscriber.email,
           subject:
-            "Cruise into Excellence: Unveiling Our Latest Trio of Cutting-Edge Cars!",
+            "Cruise into Excellence: Unveiling Our Latest Cutting-Edge Car!",
           html: htmlContent,
         };
 
@@ -126,11 +126,11 @@ const subscriberController = {
 
         // }
 
-        let result = await transport.sendMail(mailOptions);
+        let result = transport.sendMail(mailOptions);
       }
 
       // console.log("email - result", result);
-      // res.status(201).json({ message: "email sent successfully." });
+      res.status(201).json({ message: "email sent successfully." });
     } catch (error) {
       console.log("email err:-", error);
     }

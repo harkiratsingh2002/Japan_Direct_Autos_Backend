@@ -73,8 +73,8 @@ const EnquiryController = {
     
                 `;
       const mailOptions = {
-        from: process.env.USER_1,
-        to: process.env.USER_1,
+        from: process.env.USER,
+        to: process.env.USER,
         subject: "Important: New Enquiry",
         html: htmlContent,
       };

@@ -1,27 +1,29 @@
-require('dotenv').config({ path: '.env' });
-const express = require('express');
-const mongoose = require('mongoose');
-const multer = require('multer');
+require("dotenv").config({ path: ".env" });
+const express = require("express");
+const mongoose = require("mongoose");
+const multer = require("multer");
 
 const app = express();
-const cron = require('node-cron');
+const cron = require("node-cron");
 
-var cors = require('cors');
-const userRouter = require('./Routes/userRoutes');
-const User = require('./Models/User');
-const Car = require('./Models/Car');
-const carRouter = require('./Routes/carRoutes');
-const path = require('path');
-const Contact = require('./Models/Contact');
+var cors = require("cors");
+const userRouter = require("./Routes/userRoutes");
+const User = require("./Models/User");
+const Car = require("./Models/Car");
+const carRouter = require("./Routes/carRoutes");
+const path = require("path");
+const Contact = require("./Models/Contact");
 // const sendEmail = require('./mailer');
-const reviewRouter = require('./Routes/reviewRoutes');
+const reviewRouter = require("./Routes/reviewRoutes");
 
-const carController = require('./Controllers/carController');
-const subscriberRouter = require('./Routes/subscriberRoutes');
-const subscriberController = require('./Controllers/subscriberController');
-const authentication = require('./Middlewares/authentication');
-const EnquiryRouter = require('./Routes/EnquiryRoutes');
-const countRouter = require('./Routes/countRoutes');
+const carController = require("./Controllers/carController");
+const subscriberRouter = require("./Routes/subscriberRoutes");
+const subscriberController = require("./Controllers/subscriberController");
+const authentication = require("./Middlewares/authentication");
+const EnquiryRouter = require("./Routes/EnquiryRoutes");
+const countRouter = require("./Routes/countRoutes");
+const nodemailer = require("nodemailer");
+
 // const passport = require('passport');
 // const OAuth2Strategy = require('passport-google-oauth2').Strategy
 
@@ -29,9 +31,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 // app.use(passport.initialize());
-
 
 // passport.use(
 //   new OAuth2Strategy({
@@ -82,16 +82,16 @@ app.use(subscriberRouter);
 app.use(EnquiryRouter);
 app.use(countRouter); // Register the count routes
 
-const staticPath = path.join(__dirname, 'uploads');
+const staticPath = path.join(__dirname, "uploads");
 app.use(express.static(staticPath));
 
 const storage = multer.diskStorage({
   destination: function (req, file, callback) {
-    callback(null, 'uploads'); // Set the destination directory for uploads
+    callback(null, "uploads"); // Set the destination directory for uploads
   },
   filename: function (req, file, callback) {
-    callback(null, Date.now() + '-' + file.originalname); // Set the filename with timestamp
-  }
+    callback(null, Date.now() + "-" + file.originalname); // Set the filename with timestamp
+  },
 });
 
 const upload = multer({ storage: storage });
@@ -115,23 +115,52 @@ const upload = multer({ storage: storage });
 // ]
 
 // let arr = []
-app.get('/', (req, res) => {
-  res.send('Welcome to the Cars Dealing Backend!');
+app.get("/", (req, res) => {
+  res.send("Welcome to the Cars Dealing Backend!");
 });
 
+app.post(
+  "/add-car",
+  upload.array("images[]", 7),
+  authentication,
+  carController.addCar
+);
 
-app.post('/add-car', upload.array('images[]', 7), authentication, carController.addCar);
-
-app.post('/contact-us', async (req, res, next) => {
-  let newContact = new Contact()
+app.post("/contact-us", async (req, res, next) => {
+  let newContact = new Contact();
   newContact.name = req.body.name;
   newContact.email = req.body.email;
   newContact.message = req.body.message;
   await newContact.save();
+  const transport = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: process.env.USER,
+      password: process.env.EMAIL_PASS,
+      clientId: process.env.CLIENT_ID_2,
+      clientSecret: process.env.CLIENT_SECRET_2,
+      refreshToken: process.env.REFRESH_TOKEN_2,
+      //   accessToken: accessToken,
+    },
+  });
+  const htmlContent = `
+  <h1>You have a new message.</h1>
+  <h6>Name: ${req.body.name}</h6>
+  <h6>Email: ${req.body.email}</h6>
+  <h6>Message: ${req.body.message}</h6>
+  `;
+  const mailOptions = {
+    from: process.env.USER,
+    to: process.env.USER,
+    subject: "Important: New Message",
+    html: htmlContent,
+  };
+  await transport.sendMail(mailOptions);
   return res.status(201).json({
-    message: 'Your message have been received will be responded shortly.'
-  })
-})
+    message: "Your message have been received will be responded shortly.",
+  });
+});
 
 // app.post('/send-email', async (req, res) => {
 //   const { to } = req.body; // Get email details from request body
@@ -145,13 +174,14 @@ app.post('/contact-us', async (req, res, next) => {
 // });
 // code to send emails.
 // const transporter = nodemailer.createTransport(transport);
-const cronJob = cron.schedule('0 9 * * MON', () => {
-  subscriberController.sendProductAddedEmail().then();
-})
+// const cronJob = cron.schedule("0 9 * * MON", () => {
+//   subscriberController.sendProductAddedEmail().then();
+// });
 
-cronJob.start();
+// cronJob.start();
 
-mongoose.connect(process.env.DATABASE_URL)
+mongoose
+  .connect(process.env.DATABASE_URL)
   .then(() => {
     console.log("Connection established...🔗");
     app.listen(process.env.PORT || 7777, () => {
@@ -159,5 +189,3 @@ mongoose.connect(process.env.DATABASE_URL)
     });
   })
   .catch((err) => console.error("❌❌ Error connecting to server ❌❌", err));
-
-
