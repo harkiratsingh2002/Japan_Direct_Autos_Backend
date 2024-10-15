@@ -73,26 +73,24 @@ const subscriberController = {
 
       const htmlContent = `
         <h1>Latest Car Added to Our Collection!</h1>
-    <p>We're excited to announce the arrival of three new cars to our collection:</p>
+    <p>We're excited to announce the arrival of these new cars to our collection:</p>
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
       ${carData
-        .map(
-          (car) => `
+          .map(
+            (car) => `
         <div style="background-color: #f1f1f1; width:'32%'  padding: 1rem; border-radius: 5px; margin: 25px;">
-          <img src="cid:${car.images[0]}"  alt="${
-            car.name
-          }" style="width: 250px; height: 300px; display: block; object-fit: cover; margin-right: 25px;">
+          <img src="cid:${car.images[0]}"  alt="${car.name
+              }" style="width: 250px; height: 300px; display: block; object-fit: cover; margin-right: 25px;">
           <h2>${car.name}</h2>
         
-          <a href="${
-            "http://localhost:5173/car-details/" + car._id
-          }">View Details</a>
+          <a href="${"http://localhost:5173/car-details/" + car._id
+              }">View Details</a>
         </div>
       `
-        )
-        .join("")}
+          )
+          .join("")}
     </div>
-    <p>Don't miss out on these beauties! Visit our website to explore our entire collection.</p>
+    <p>Don't miss out on these budget friendly Cars! Visit our website to explore our entire collection.</p>
     <p>Sincerely,</p>
     <p>Japan Direct Autos Team</p>
       `;

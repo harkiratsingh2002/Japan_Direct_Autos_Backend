@@ -285,10 +285,20 @@ const carController = {
   },
   searchCars: async (req, res, next) => {
     try {
-      const { searchText, page, sortOption } = req.body;
+      const { searchText, page = 1, sortOption } = req.body;
 
-      // Default sort criteria, by relevance (MongoDB's default with text search)
-      let sortCriteria = { score: { $meta: "textScore" } };
+      // Define a regex for partial match (case insensitive) on the 'name' field
+      const regex = new RegExp(searchText, "i");
+
+      // Create the query object
+      const query = {
+        name: { $regex: regex },
+      };
+
+      console.log("Search Query: ", JSON.stringify(query));
+
+      // Default sort criteria
+      let sortCriteria = {};
 
       // Modify sortCriteria based on user selection
       if (sortOption === "price_asc") {
@@ -301,22 +311,22 @@ const carController = {
         sortCriteria = { year: -1 }; // Sort by year descending (newest first)
       }
 
-      // MongoDB text search with sorting based on the criteria
-      const total = await Car.find({
-        $text: { $search: searchText },
-      }).countDocuments();
+      console.log("Sort Criteria: ", sortCriteria);
 
-      console.log("total search: ", total);
+      // Get the total count of documents matching the search
+      const total = await Car.find(query).countDocuments();
+
+      console.log("Total search results: ", total);
 
       // Perform the search with sorting and pagination
-      const searchResult = await Car.find({
-        $text: { $search: searchText },
-      })
+      const searchResult = await Car.find(query)
         .populate("adminId", "email")
         .sort(sortCriteria) // Apply sorting criteria
         .skip(5 * (page - 1)) // Pagination skip
         .limit(5) // Limit results per page
         .exec(); // Execute the query
+
+      console.log("Search Result: ", searchResult);
 
       return res.status(200).json({
         total,

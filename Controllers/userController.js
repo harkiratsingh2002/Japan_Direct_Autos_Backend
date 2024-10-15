@@ -134,10 +134,75 @@ const userController = {
           },
         });
 
-        const htmlContent = ` 
-                        <h1>Otp for verification.</h1>
-                        <h3>Otp:- ${otp}</h3>
-                        `;
+        const htmlContent = `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Verification</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+      p {
+        font-size: 16px;
+        color: #555;
+      }
+      .otp {
+        font-size: 22px;
+        font-weight: bold;
+        color: #007bff;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 14px;
+        color: #999;
+        text-align: center;
+      }
+      .footer a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Verify Your Email Address</h1>
+      <p>Dear User,</p>
+      <p>Thank you for registering with us! To complete your registration, please use the OTP (One-Time Password) below to verify your email address:</p>
+      <p class="otp">${otp}</p>
+      <p>This OTP is valid for the next 10 minutes. If you did not request this verification, please ignore this email.</p>
+      <p>Best regards,</p>
+      <p>The [Your Company Name] Team</p>
+      <div class="footer">
+        <p>If you need any help, feel free to <a href="mailto:support@yourcompany.com">contact our support team</a>.</p>
+      </div>
+    </div>
+  </body>
+  </html>
+`;
+
         const mailOptions = {
           from: process.env.USER,
           to: req.body.email,
