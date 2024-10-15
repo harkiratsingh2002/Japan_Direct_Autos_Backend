@@ -1,12 +1,12 @@
 const jwt = require("jsonwebtoken");
 const secret = process.env.JWT_SECRET;
 
-const authentication = (req,res,next)=>{
+const authentication = (req, res, next) => {
 
     console.log('req reached')
 
-    const authHeader = req.headers.authorization;
-    console.log('req',req.headers);
+    const authHeader = req.headers['authorization'];
+    console.log('req', req.headers);
     console.log('authHeader', authHeader)
 
     if (authHeader) {
@@ -14,7 +14,7 @@ const authentication = (req,res,next)=>{
         console.log('token', token)
         jwt.verify(token, secret, (err, decoded) => {
             if (err) {
-                console.log('token error:-',err);
+                console.log('token error:-', err);
                 return res.status(401).json({ message: 'Unauthorized' });
             }
 
@@ -22,10 +22,10 @@ const authentication = (req,res,next)=>{
             next();
         });
     } else {
-        console.log('token error 2:-',err);
+        console.log('token error 2:-', err);
 
         res.status(401).json({ message: 'Unauthorized' });
     }
 }
 
-module.exports =  authentication 
+module.exports = authentication 

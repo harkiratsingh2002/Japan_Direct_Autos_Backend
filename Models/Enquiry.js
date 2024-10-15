@@ -4,9 +4,9 @@ const EnquirySchema = new mongoose.Schema({
 
     enquiredBy: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true,
+
         ref: "User",
-        unique: false 
+        unique: false
     },
     enquiredByEmail: String,
     enquirySubject: String,
@@ -15,15 +15,15 @@ const EnquirySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: "Car",
-        unique: false 
+        unique: false
     },
     carLink: String,
     // status: String,
     completed: Boolean
 })
 
-EnquirySchema.index({'$**':'text'});
+EnquirySchema.index({ '$**': 'text' });
 const Enquiry = mongoose.model("Enquiry", EnquirySchema);
 
-module.exports =  Enquiry
+module.exports = Enquiry
 
