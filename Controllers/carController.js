@@ -13,14 +13,14 @@ const carController = {
     let page = req.body.page;
     let itemsPerPage = 6;
     let count = await Car.find({
-      oldOrNew: "New",
+      oldOrNew: "Featured",
     }).countDocuments();
     let cars = await Car.find({
-      oldOrNew: "New",
+      oldOrNew: "Featured",
     })
       .skip(itemsPerPage * (page - 1))
       .limit(itemsPerPage);
-    console.log("All new cars:- ", cars);
+    console.log("All Featured cars:- ", cars);
     res.status(200).json({
       message: "All new Cars",
       cars: cars,
@@ -191,7 +191,7 @@ const carController = {
   getSevenNewCars: async (req, res, next) => {
     try {
       let sevenNewCars = await Car.find({
-        oldOrNew: "New",
+        oldOrNew: "Featured",
       }).limit(7);
       return res.status(200).json({
         cars: sevenNewCars,
