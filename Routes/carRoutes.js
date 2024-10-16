@@ -20,6 +20,7 @@ carRouter.get("/get-seven-rental-cars", carController.getSevenRentalCars);
 carRouter.post("/get-five-cars", carController.getFiveCars);
 carRouter.post("/delete-car", carController.deleteCar);
 carRouter.post("/search-cars", carController.searchCars);
+carRouter.post("/suggest-cars", carController.suggestCars);
 carRouter.post("/add-car-admin-info", carController.addAdminCarInfo);
 carRouter.post("/get-car-admin-info", carController.getCarAdminInfo);
 

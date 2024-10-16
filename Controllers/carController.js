@@ -339,6 +339,41 @@ const carController = {
       });
     }
   },
+  suggestCars: async (req, res, next) => {
+    try {
+      const { searchText } = req.body;
+
+      // If no searchText is provided, return an empty array
+      if (!searchText) {
+        return res.status(200).json({
+          suggestions: [],
+        });
+      }
+
+      // Define a regex for partial match (case insensitive) on the 'name' field
+      const regex = new RegExp(searchText, "i");
+
+      // Create the query object
+      const query = {
+        name: { $regex: regex },
+      };
+
+      // Limit results to a small number for suggestions (e.g., 10)
+      const suggestions = await Car.find(query)
+        .limit(10) // Limit to 10 suggestions
+        .select("name year price") // Only return the fields you need for suggestions
+        .exec(); // Execute the query
+
+      return res.status(200).json({
+        suggestions,
+      });
+    } catch (error) {
+      console.log("Error while suggesting Cars", error);
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+  },
 
 
   addAdminCarInfo: async (req, res, next) => {
