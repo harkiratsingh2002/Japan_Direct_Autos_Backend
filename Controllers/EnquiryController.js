@@ -4,65 +4,48 @@ const nodemailer = require("nodemailer");
 const EnquiryController = {
   sendEnquiry: async (req, res, next) => {
     try {
-      let user = req.user; // Might be undefined for anonymous users
-      let email = null;
-      let enquiredBy = null;
+      let user = req.user || null; // Check if user is logged in
+      console.log("user", user);
 
+      // Handle enquiry creation logic based on login status
+      let existingEnquiry = null;
       if (user) {
-        enquiredBy = user._id;
-        email = user.email;
-      } else {
-        // Handle anonymous users
-        email = req.body.email;
-        if (!email) {
-          return res.status(400).json({
-            message: "Email is required for anonymous enquiries.",
-          });
-        }
-
-        // Basic email format validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          return res.status(400).json({
-            message: "Invalid email format.",
-          });
-        }
-      }
-
-      // Check for existing enquiries
-      let existingEnquiryQuery = {
-        carId: req.body.carId,
-        completed: false,
-      };
-
-      if (enquiredBy) {
-        existingEnquiryQuery.enquiredBy = enquiredBy;
-      } else {
-        existingEnquiryQuery.enquiredByEmail = email;
-      }
-
-      let existingEnquiry = await Enquiry.find(existingEnquiryQuery);
-
-      if (existingEnquiry.length > 0) {
-        return res.status(200).json({
-          message: "Your enquiry is already in process.",
+        // For logged-in users, check if they already enquired about this car
+        existingEnquiry = await Enquiry.findOne({
+          enquiredBy: user._id,
+          carId: req.body.carId,
+          completed: false,
         });
+
+        if (existingEnquiry) {
+          return res.status(200).json({
+            message: "You already have an enquiry in process for this car.",
+          });
+        }
       }
 
       // Create new enquiry
-      let enquiry = new Enquiry({
-        enquiredBy: enquiredBy, // Can be null
-        enquiredByEmail: email,
-        enquirySubject: req.body.enquirySubject,
-        enquiryText: req.body.enquiryText,
+      const enquiry = new Enquiry({
         carId: req.body.carId,
         carLink: req.body.carLink,
+        enquirySubject: req.body.enquirySubject,
+        enquiryText: req.body.enquiryText,
         completed: false,
       });
 
-      let savedEnquiry = await enquiry.save();
+      // Populate user info based on login status
+      if (user) {
+        enquiry.enquiredBy = user._id;
+        enquiry.enquiredByEmail = user.email;
+        enquiry.enquiredByName = `${user.firstName} ${user.lastName}`;
+      } else {
+        enquiry.enquiredByEmail = req.body.enquiredByEmail;
+        enquiry.enquiredByName = req.body.enquiredByName;
+      }
 
-      // Send email to admin
+      const savedEnquiry = await enquiry.save();
+
+      // Send email notification to admin
       const transport = nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -75,58 +58,44 @@ const EnquiryController = {
         },
       });
 
-      let userName = user
-        ? `${user.firstName} ${user.lastName}`
-        : "Anonymous User";
-
       const htmlContent = `
-        <h1>You Have a New Enquiry</h1>
-        <h3>User Data</h3>
-        <table style="margin:3em; border: 1px solid black;">
-          <thead>
-            <tr>
-              <th style="border: 1px solid black;">Properties</th>
-              <th style="border: 1px solid black;">Values</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="border: 1px solid black;">Name</td>
-              <td style="border: 1px solid black;">${userName}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid black;">Email</td>
-              <td style="border: 1px solid black;">${email}</td>
-            </tr>
-          </tbody>
-        </table>
-        <h3>Car Details Link</h3>
-        <p>${req.body.carLink}</p>
-        <h4>User Subject: ${req.body.enquirySubject}</h4>
-        <p>Enquiry: ${req.body.enquiryText}</p>
-        <h4>Enquiry ID: ${savedEnquiry._id}</h4>
-      `;
+          <h1>New Enquiry Received</h1>
+          <h3>User Details</h3>
+          <table style="border: 1px solid black;">
+            <tr><td>Name</td><td>${user ? `${user.firstName} ${user.lastName}` : req.body.enquiredByName}</td></tr>
+            <tr><td>Email</td><td>${user ? user.email : req.body.enquiredByEmail}</td></tr>
+          </table>
+          <h3>Car Details</h3>
+          <p><a href="${req.body.carLink}">View Car</a></p>
+          <h4>Enquiry Subject: ${req.body.enquirySubject}</h4>
+          <p>Message: ${req.body.enquiryText}</p>
+          <h4>Enquiry ID: ${savedEnquiry._id}</h4>
+        `;
 
       const mailOptions = {
         from: process.env.USER,
         to: process.env.USER,
-        subject: "Important: New Enquiry",
+        subject: "New Car Enquiry",
         html: htmlContent,
       };
 
       await transport.sendMail(mailOptions);
 
       return res.status(201).json({
-        message:
-          "Your enquiry has been sent. A representative will contact you via email soon.",
+        message: "Your enquiry has been submitted successfully. Our team will contact you shortly.",
       });
     } catch (error) {
-      console.error("Error while sending enquiry:", error);
+      console.error("Error sending enquiry:", error);
       return res.status(500).json({
-        message: "A server error occurred.",
+        message: "An error occurred while sending your enquiry. Please try again later.",
       });
     }
   },
+
+
+
+
+
 
   getFiveEnquiries: async (req, res, next) => {
     let page = req.body.page;
